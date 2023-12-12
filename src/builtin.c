@@ -13,10 +13,10 @@ void builtin_exit() {
 int builtin_cd(char * path){
     int ret = 0;
     if(path == NULL || strcmp(path, "~") == 0){
-        int ret = chdir(getenv("HOME"));
+        ret = chdir(getenv("HOME"));
     }
     else{
-        int ret = chdir(path);
+        ret = chdir(path);
     }
     if(errno != 0){
         perror("cd");

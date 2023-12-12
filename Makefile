@@ -2,7 +2,7 @@ CC= gcc
 FLAGS= -Wall -g
 LIB= -lreadline
 
-all: shell
+.PHONY: clean readline-install
 
 shell: build_parser build_jobs build_builtin src/shell.c
 	$(CC) $(LIB) $(FLAGS) out/parser.o out/jobs.o out/builtin.o src/shell.c -o out/trash
@@ -18,3 +18,7 @@ build_builtin: src/builtin.c src/builtin.h
 
 clean:
 	rm out/*
+
+readline-install:
+	echo "Install readline"
+	#sudo apt-get ...

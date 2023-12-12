@@ -2,10 +2,14 @@
 #include "jobs.h"
 #include "builtin.h"
 
+#include <bits/types/siginfo_t.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
+#include <sys/wait.h>
+#include <signal.h>
 
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -13,6 +17,27 @@
 #define HANDLE_ERROR(str) {perror(str);}
 #define HANDLE_UNEXPECTED_EVENT() {exit(EXIT_FAILURE);}
 #define BUFF_SIZE 256
+
+int background_job = 0;
+
+static void child_process_signal(int signum, siginfo_t * siginfo, void * unused){
+    pid_t pid_sig = siginfo->si_pid;
+    int status;
+    char buff[BUFF_SIZE];
+    memset(buff, '\0', BUFF_SIZE);
+    switch (signum) { 
+        case SIGCHLD:
+            if (pid_sig == background_job){
+                waitpid(pid_sig, &status, 0);
+                sprintf(buff, "\nbg job exited with code %d\n", status);
+                write(STDOUT_FILENO, buff, sizeof(buff));
+                background_job = 0;
+            }
+            break;
+        default:
+            break;
+    }
+}
 
 void print_ps() {
     char username[BUFF_SIZE];
@@ -33,7 +58,13 @@ void print_ps() {
 }
 
 int main(){
-    // Configure readline to auto-complete paths when the tab key is hit.
+    struct sigaction sa;
+    sa.sa_sigaction = child_process_signal;
+    sa.sa_flags = SA_SIGINFO;
+    sa.sa_restorer = NULL;
+
+    sigaction(SIGCHLD, &sa, NULL);
+
     rl_bind_key('\t', rl_complete);
     // Enable history
     using_history();
@@ -45,12 +76,12 @@ int main(){
         char* input = readline(" ");
         strncpy(buff, input, BUFF_SIZE);
 
-        // Check for EOF.
         if (!input){
             break;
         }
         else{
             args * arguments = parse(buff, " ");
+            pid_t bg_pid = background_job;
             if(arguments == NULL){
                 HANDLE_UNEXPECTED_EVENT();
             }
@@ -63,8 +94,11 @@ int main(){
                     builtin_exit();
                     break;
                 default:
-                    exec_job(arguments->argv);
+                    bg_pid = exec_job(arguments->argc, arguments->argv, background_job);
                     break;
+            }
+            if(bg_pid > 1){
+                background_job = bg_pid;
             }
 
             free_args(arguments);
