@@ -19,6 +19,3 @@ build_builtin: src/builtin.c src/builtin.h
 clean:
 	rm out/*
 
-readline-install:
-	echo "Install readline"
-	#sudo apt-get ...

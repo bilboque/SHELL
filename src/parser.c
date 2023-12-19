@@ -33,7 +33,7 @@ args * parse(char * str, char * sep) {
     char * token = strtok(str, sep);
     if (token == NULL) {
         free(arguments);
-        HANDLE_PARSER_ERROR("trying to parse an empty string");
+        return NULL;
     }
 
     while (token != NULL) {

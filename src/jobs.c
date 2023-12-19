@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-int exec_fg_job(char ** argv){
+int exec_fg_job(char ** argv, pid_t * foreground_job){
     int wstatus = 0;
     pid_t cpid = 0;
     pid_t pid = fork();
@@ -20,6 +20,7 @@ int exec_fg_job(char ** argv){
         exit(EXIT_FAILURE);
     }
     else if (pid > 0){
+        *foreground_job = pid;
         cpid = wait(&wstatus);
         if(cpid == -1){
             perror("wait");
@@ -27,6 +28,7 @@ int exec_fg_job(char ** argv){
         }
         else{
             printf("FG job %s (PID : %d) exited with code %d\n", argv[0], cpid, wstatus);
+            *foreground_job = 0;
             return 0;
         }
     }
@@ -60,10 +62,10 @@ int exec_bg_job(int argc, char ** argv){
     }
 }
 
-int exec_job(int argc, char ** argv, int bg_job){
+int exec_job(int argc, char ** argv, pid_t * bg_job, pid_t * fg_job){
     // printf("last: %s\n", argv[argc - 1]);
     if(strcmp(argv[argc - 1], "&") == 0){
-        if(bg_job > 1){
+        if(*bg_job > 1){
             printf("Can't execute more than 1 bg job at once\n");
             return -1;
         }
@@ -72,7 +74,7 @@ int exec_job(int argc, char ** argv, int bg_job){
         }
     }
     else{
-        return exec_fg_job(argv);
+        return exec_fg_job(argv, fg_job);
     }
 }
 

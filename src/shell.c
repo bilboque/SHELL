@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -18,26 +19,8 @@
 #define HANDLE_UNEXPECTED_EVENT() {exit(EXIT_FAILURE);}
 #define BUFF_SIZE 256
 
-int background_job = 0;
-
-static void child_process_signal(int signum, siginfo_t * siginfo, void * unused){
-    pid_t pid_sig = siginfo->si_pid;
-    int status;
-    char buff[BUFF_SIZE];
-    memset(buff, '\0', BUFF_SIZE);
-    switch (signum) { 
-        case SIGCHLD:
-            if (pid_sig == background_job){
-                waitpid(pid_sig, &status, 0);
-                sprintf(buff, "\nbg job exited with code %d\n", status);
-                write(STDOUT_FILENO, buff, sizeof(buff));
-                background_job = 0;
-            }
-            break;
-        default:
-            break;
-    }
-}
+pid_t background_job = 0;
+pid_t foreground_job =0;
 
 void print_ps() {
     char username[BUFF_SIZE];
@@ -53,8 +36,43 @@ void print_ps() {
         exit(EXIT_FAILURE);
     }
 
-    printf("\033[1;96m┌%s@trash - \033[1;97m%s\n", username, cwd);
-    printf("\033[1;96m└$\033[0m");
+    printf("\033[1;96m%s@trash - \033[1;97m%s\033[1;96m $\033[0m", username, cwd);
+}
+
+static void child_process_signal(int signum, siginfo_t * siginfo, void * unused){
+    pid_t pid_sig = siginfo->si_pid;
+    int status;
+    char buff[BUFF_SIZE];
+    memset(buff, '\0', BUFF_SIZE);
+    switch (signum) { 
+        case SIGCHLD:
+            if (pid_sig == background_job){
+                waitpid(pid_sig, &status, 0);
+                sprintf(buff, "\nbg job exited with code %d\n", status);
+                write(STDOUT_FILENO, buff, sizeof(buff));
+                background_job = 0;
+            }
+            break;
+        case SIGINT:
+            if(pid_sig == getpid() && foreground_job != 0){
+                if(kill(foreground_job, SIGINT) == -1){
+                }
+                foreground_job = 0;
+            }
+            break;
+
+        case SIGHUP:
+            if(background_job >0){
+                kill(background_job, SIGINT);
+            }
+            if (foreground_job >0) {
+                kill(foreground_job, SIGINT);
+            }
+            exit(EXIT_SUCCESS);
+            break;
+        default:
+            break;
+    }
 }
 
 int main(){
@@ -64,6 +82,8 @@ int main(){
     sa.sa_restorer = NULL;
 
     sigaction(SIGCHLD, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGHUP, &sa, NULL);
 
     rl_bind_key('\t', rl_complete);
     // Enable history
@@ -76,16 +96,13 @@ int main(){
         char* input = readline(" ");
         strncpy(buff, input, BUFF_SIZE);
 
-        if (!input){
+        if (!input)
             break;
-        }
         else{
             args * arguments = parse(buff, " ");
             pid_t bg_pid = background_job;
-            if(arguments == NULL){
-                HANDLE_UNEXPECTED_EVENT();
-            }
-
+            if(arguments == NULL)
+                continue;
             switch (check_builtin(arguments->argv[0])) {
                 case BUILTIN_CD:
                     builtin_cd(arguments->argv[1]);
@@ -94,7 +111,7 @@ int main(){
                     builtin_exit();
                     break;
                 default:
-                    bg_pid = exec_job(arguments->argc, arguments->argv, background_job);
+                    bg_pid = exec_job(arguments->argc, arguments->argv, &background_job, &foreground_job);
                     break;
             }
             if(bg_pid > 1){
