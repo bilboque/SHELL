@@ -12,7 +12,7 @@
 #define N_BUILTIN 2
 
 #define BUILTIN_WRONG_USE(cmd, err) {fprintf(stderr, "%s : %s\n", cmd, err);}
-
+// blalalalalalla
 int check_builtin(char * cmd);
 int builtin_cd(char * path);
 void builtin_exit();

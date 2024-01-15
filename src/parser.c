@@ -7,19 +7,18 @@
 
 #define HANDLE_PARSER_ERROR(str) {fprintf(stderr, "parser : %s\n", str);return NULL;}
 
-void free_args(args * freeme){
+void free_args(args_t * freeme){
     free(freeme->argv);
     free(freeme);
 }
 
-void print_args(args * arguments){
-    for (int i = 0; i < arguments->argc; i++){
+void print_args(args_t * arguments){
+    for (int i = 0; i < arguments->argc; i++)
         printf("argv[%d] = %s\n", i, arguments->argv[i]);
-    }
 }
 
-args * init_args() {
-    args * new_args = (args *) malloc(sizeof(args));
+args_t * init_args() {
+    args_t * new_args = (args_t *) malloc(sizeof(args_t));
 
     new_args->argc = 0;
     new_args->argv = (char **) malloc(sizeof(char *));
@@ -27,8 +26,8 @@ args * init_args() {
     return new_args;
 }
 
-args * parse(char * str, char * sep) {
-    args * arguments = init_args();
+args_t * parse(char * str, char * sep) {
+    args_t * arguments = init_args();
 
     char * token = strtok(str, sep);
     if (token == NULL) {

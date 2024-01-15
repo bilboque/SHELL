@@ -15,12 +15,13 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+#define EVER ;;
 #define HANDLE_ERROR(str) {perror(str);}
 #define HANDLE_UNEXPECTED_EVENT() {exit(EXIT_FAILURE);}
 #define BUFF_SIZE 256
 
 pid_t background_job = 0;
-pid_t foreground_job =0;
+pid_t foreground_job = 0;
 
 void print_ps() {
     char username[BUFF_SIZE];
@@ -39,7 +40,7 @@ void print_ps() {
     printf("\033[1;96m%s@trash - \033[1;97m%s\033[1;96m $\033[0m", username, cwd);
 }
 
-static void child_process_signal(int signum, siginfo_t * siginfo, void * unused){
+void child_process_signal(int signum, siginfo_t * siginfo, void * unused){
     pid_t pid_sig = siginfo->si_pid;
     int status;
     char buff[BUFF_SIZE];
@@ -55,19 +56,17 @@ static void child_process_signal(int signum, siginfo_t * siginfo, void * unused)
             break;
         case SIGINT:
             if(pid_sig == getpid() && foreground_job != 0){
-                if(kill(foreground_job, SIGINT) == -1){
-                }
+                kill(foreground_job, SIGINT);
                 foreground_job = 0;
             }
             break;
-
         case SIGHUP:
-            if(background_job >0){
+            if(background_job > 0)
                 kill(background_job, SIGINT);
-            }
-            if (foreground_job >0) {
+
+            if(foreground_job > 0)
                 kill(foreground_job, SIGINT);
-            }
+
             exit(EXIT_SUCCESS);
             break;
         default:
@@ -90,7 +89,7 @@ int main(){
     using_history();
     
     char buff[BUFF_SIZE];
-    while(1){
+    for(EVER){
         memset(buff, '\0', BUFF_SIZE);
         print_ps();
         char* input = readline(" ");
@@ -99,7 +98,7 @@ int main(){
         if (!input)
             break;
         else{
-            args * arguments = parse(buff, " ");
+            args_t * arguments = parse(buff, " ");
             pid_t bg_pid = background_job;
             if(arguments == NULL)
                 continue;
@@ -114,9 +113,8 @@ int main(){
                     bg_pid = exec_job(arguments->argc, arguments->argv, &background_job, &foreground_job);
                     break;
             }
-            if(bg_pid > 1){
+            if(bg_pid > 1)
                 background_job = bg_pid;
-            }
 
             free_args(arguments);
             free(input);

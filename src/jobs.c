@@ -1,5 +1,4 @@
 #include "jobs.h"
-#include "builtin.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,7 +37,7 @@ int exec_fg_job(char ** argv, pid_t * foreground_job){
     }
 }
 
-int exec_bg_job(int argc, char ** argv){
+pid_t exec_bg_job(int argc, char ** argv){
     argv[argc - 1] = NULL;
     pid_t pid = fork();
     if(pid == 0){
@@ -53,9 +52,9 @@ int exec_bg_job(int argc, char ** argv){
         fprintf(stderr, "trash: %s - command not found.\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-    else if (pid > 0){
+    else if (pid > 0)
         return pid;
-    }
+
     else{
         perror("fork");
         exit(EXIT_FAILURE);
@@ -69,13 +68,9 @@ int exec_job(int argc, char ** argv, pid_t * bg_job, pid_t * fg_job){
             printf("Can't execute more than 1 bg job at once\n");
             return -1;
         }
-        else{
-            return exec_bg_job(argc,argv);
-        }
+        else return exec_bg_job(argc,argv);
     }
-    else{
-        return exec_fg_job(argv, fg_job);
-    }
+    else return exec_fg_job(argv, fg_job);
 }
 
 

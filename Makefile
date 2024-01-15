@@ -2,7 +2,7 @@ CC= gcc
 FLAGS= -Wall -g
 LIB= -lreadline
 
-.PHONY: clean readline-install
+.PHONY: clean
 
 shell: build_parser build_jobs build_builtin src/shell.c
 	$(CC) $(LIB) $(FLAGS) out/parser.o out/jobs.o out/builtin.o src/shell.c -o out/trash

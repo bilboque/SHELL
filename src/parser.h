@@ -4,11 +4,11 @@
 typedef struct arguments{
     int argc;
     char ** argv;
-} args;
+} args_t;
 
-args * init_args();
-args * parse(char * str, char * separator);
-void print_args(args * arguments);
-void free_args(args * arguments);
+args_t * init_args();
+args_t * parse(char * str, char * separator);
+void print_args(args_t * arguments);
+void free_args(args_t * arguments);
 
 #endif
