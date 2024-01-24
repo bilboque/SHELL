@@ -89,7 +89,7 @@ int main(){
     using_history();
     
     char buff[BUFF_SIZE];
-    for(EVER){
+    for (EVER){
         memset(buff, '\0', BUFF_SIZE);
         print_ps();
         char* input = readline(" ");
